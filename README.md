@@ -36,7 +36,7 @@ Generates tailored questions, evaluates answers with structured scoring, and tra
 ```bash
 git clone <repo-url>
 cd interview-coach
-cp .env.example .env
+cp .env
 # Fill in GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY, DATABASE_URL, SECRET_KEY
 ```
 
@@ -61,7 +61,7 @@ npm run dev                   # http://localhost:3000
 ### 4. Docker Compose (full stack)
 
 ```bash
-cp .env.example .env          # fill in values
+cp .env          # fill in values
 docker-compose up
 ```
 

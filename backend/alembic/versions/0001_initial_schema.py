@@ -21,7 +21,7 @@ def upgrade() -> None:
         "users",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("email", sa.Text(), nullable=False, unique=True),
-        sa.Column("created_at", postgresql.TIMESTAMPTZ(), server_default=sa.text("now()")),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()")),
     )
 
     op.create_table(
@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column("interview_type", sa.Text(), nullable=False),
         sa.Column("status", sa.Text(), server_default="active"),
         sa.Column("total_score", sa.Numeric(4, 2), nullable=True),
-        sa.Column("created_at", postgresql.TIMESTAMPTZ(), server_default=sa.text("now()")),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()")),
     )
 
     op.create_table(
@@ -58,7 +58,7 @@ def upgrade() -> None:
         sa.Column("gaps", postgresql.JSONB(), nullable=True),
         sa.Column("model_answer", sa.Text(), nullable=True),
         sa.Column("tips", sa.Text(), nullable=True),
-        sa.Column("submitted_at", postgresql.TIMESTAMPTZ(), server_default=sa.text("now()")),
+        sa.Column("submitted_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()")),
     )
 
     op.create_table(
@@ -68,7 +68,7 @@ def upgrade() -> None:
         sa.Column("topic", sa.Text(), nullable=False),
         sa.Column("avg_score", sa.Numeric(4, 2), nullable=False),
         sa.Column("attempt_count", sa.Integer(), server_default="1"),
-        sa.Column("last_seen", postgresql.TIMESTAMPTZ(), server_default=sa.text("now()")),
+        sa.Column("last_seen", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()")),
         sa.UniqueConstraint("user_id", "topic", name="uq_weakness_user_topic"),
     )
 

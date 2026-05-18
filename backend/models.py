@@ -8,8 +8,9 @@ from sqlalchemy import (
     Integer,
     Text,
     UniqueConstraint,
+    TIMESTAMP,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMPTZ, UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -21,7 +22,7 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMPTZ, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     sessions: Mapped[list["Session"]] = relationship(back_populates="user")
     weakness_entries: Mapped[list["WeaknessTracker"]] = relationship(back_populates="user")
@@ -37,7 +38,7 @@ class Session(Base):
     interview_type: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, default="active")
     total_score: Mapped[float | None] = mapped_column(NUMERIC(4, 2), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMPTZ, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     user: Mapped["User | None"] = relationship(back_populates="sessions")
     questions: Mapped[list["Question"]] = relationship(back_populates="session", order_by="Question.position")
@@ -70,7 +71,7 @@ class Answer(Base):
     gaps: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     model_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     tips: Mapped[str | None] = mapped_column(Text, nullable=True)
-    submitted_at: Mapped[datetime] = mapped_column(TIMESTAMPTZ, server_default=func.now())
+    submitted_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     question: Mapped["Question"] = relationship(back_populates="answer")
 
@@ -83,7 +84,7 @@ class WeaknessTracker(Base):
     topic: Mapped[str] = mapped_column(Text, nullable=False)
     avg_score: Mapped[float] = mapped_column(NUMERIC(4, 2), nullable=False)
     attempt_count: Mapped[int] = mapped_column(Integer, default=1)
-    last_seen: Mapped[datetime] = mapped_column(TIMESTAMPTZ, server_default=func.now())
+    last_seen: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     __table_args__ = (UniqueConstraint("user_id", "topic", name="uq_weakness_user_topic"),)
 

@@ -1,10 +1,8 @@
-import asyncio
+import json
 import logging
 from functools import lru_cache
 
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_groq import ChatGroq
+from groq import Groq
 from pydantic import BaseModel, Field
 
 from config import settings
@@ -41,10 +39,28 @@ class AnswerEvaluation(BaseModel):
     tips: str
 
 
-# ── Prompt templates ───────────────────────────────────────────────────────
+# ── Groq client (cached singleton) ────────────────────────────────────────
 
-_QUESTION_GEN_TEMPLATE = """\
-You are an expert technical interviewer at a top tech company.
+@lru_cache(maxsize=1)
+def _get_client() -> Groq:
+    return Groq(api_key=settings.groq_api_key)
+
+
+def _chat(prompt: str) -> str:
+    """Send a prompt, force JSON output, return raw response text."""
+    response = _get_client().chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0.7,
+    )
+    return response.choices[0].message.content
+
+
+# ── Prompt builders ────────────────────────────────────────────────────────
+
+def _question_gen_prompt(role: str, level: str, interview_type: str, count: int) -> str:
+    return f"""You are an expert technical interviewer at a top tech company.
 
 Generate {count} interview questions for a {level} {role}.
 Interview type: {interview_type}
@@ -53,16 +69,28 @@ Rules:
 - Mix difficulty: 30% easy, 50% medium, 20% hard
 - For "mixed" type: 60% technical, 40% behavioral
 - Questions must be specific to the role, not generic
-- Include expected_topics: what a good answer must mention
+- Include expected_topics: key points a good answer must mention
 
-{format_instructions}
-"""
+Respond with valid JSON only, in this exact shape:
+{{
+  "questions": [
+    {{
+      "text": "...",
+      "type": "technical | behavioral | system_design",
+      "topic": "...",
+      "difficulty": "easy | medium | hard",
+      "expected_topics": ["...", "..."]
+    }}
+  ]
+}}"""
 
-_EVAL_TEMPLATE = """\
-You are a senior interviewer evaluating a candidate's answer.
+
+def _eval_prompt(question: str, expected_topics: list[str], user_answer: str) -> str:
+    topics_str = ", ".join(expected_topics)
+    return f"""You are a senior interviewer evaluating a candidate's answer.
 
 Question: {question}
-Expected topics a good answer should cover: {expected_topics}
+Expected topics a good answer should cover: {topics_str}
 Candidate's answer: {user_answer}
 
 Score from 1-10:
@@ -73,19 +101,14 @@ Score from 1-10:
 
 Be constructive but honest. The candidate is preparing for a real interview.
 
-{format_instructions}
-"""
-
-
-# ── LLM client (cached singleton) ─────────────────────────────────────────
-
-@lru_cache(maxsize=1)
-def _get_llm() -> ChatGroq:
-    return ChatGroq(
-        model="llama-3.1-8b-instant",
-        api_key=settings.groq_api_key,
-        temperature=0.7,
-    )
+Respond with valid JSON only, in this exact shape:
+{{
+  "score": <integer 1-10>,
+  "strengths": ["...", "..."],
+  "gaps": ["...", "..."],
+  "model_answer": "...",
+  "tips": "..."
+}}"""
 
 
 # ── Public API ─────────────────────────────────────────────────────────────
@@ -96,27 +119,19 @@ async def generate_questions(
     interview_type: str,
     count: int,
 ) -> list[Question]:
-    parser = PydanticOutputParser(pydantic_object=QuestionSet)
-    prompt = ChatPromptTemplate.from_template(_QUESTION_GEN_TEMPLATE)
-    chain = prompt | _get_llm() | parser
+    prompt = _question_gen_prompt(role, level, interview_type, count)
 
     for attempt in range(1, _RETRY_ATTEMPTS + 1):
         try:
-            result: QuestionSet = await asyncio.to_thread(
-                chain.invoke,
-                {
-                    "count": count,
-                    "level": level,
-                    "role": role,
-                    "interview_type": interview_type,
-                    "format_instructions": parser.get_format_instructions(),
-                },
-            )
-            return result.questions
+            raw = _chat(prompt)
+            data = json.loads(raw)
+            return QuestionSet.model_validate(data).questions
         except Exception as exc:
             logger.warning("Question generation attempt %d failed: %s", attempt, exc)
             if attempt == _RETRY_ATTEMPTS:
-                raise AIServiceError(f"Failed to generate questions after {_RETRY_ATTEMPTS} attempts") from exc
+                raise AIServiceError(
+                    f"Failed to generate questions after {_RETRY_ATTEMPTS} attempts"
+                ) from exc
 
     raise AIServiceError("Unreachable")
 
@@ -126,25 +141,18 @@ async def evaluate_answer(
     expected_topics: list[str],
     user_answer: str,
 ) -> AnswerEvaluation:
-    parser = PydanticOutputParser(pydantic_object=AnswerEvaluation)
-    prompt = ChatPromptTemplate.from_template(_EVAL_TEMPLATE)
-    chain = prompt | _get_llm() | parser
+    prompt = _eval_prompt(question_text, expected_topics, user_answer)
 
     for attempt in range(1, _RETRY_ATTEMPTS + 1):
         try:
-            result: AnswerEvaluation = await asyncio.to_thread(
-                chain.invoke,
-                {
-                    "question": question_text,
-                    "expected_topics": ", ".join(expected_topics),
-                    "user_answer": user_answer,
-                    "format_instructions": parser.get_format_instructions(),
-                },
-            )
-            return result
+            raw = _chat(prompt)
+            data = json.loads(raw)
+            return AnswerEvaluation.model_validate(data)
         except Exception as exc:
             logger.warning("Answer evaluation attempt %d failed: %s", attempt, exc)
             if attempt == _RETRY_ATTEMPTS:
-                raise AIServiceError(f"Failed to evaluate answer after {_RETRY_ATTEMPTS} attempts") from exc
+                raise AIServiceError(
+                    f"Failed to evaluate answer after {_RETRY_ATTEMPTS} attempts"
+                ) from exc
 
     raise AIServiceError("Unreachable")

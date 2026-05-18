@@ -11,10 +11,39 @@ import {
 import { getSessionSummary } from "../api/sessions";
 import type { SessionSummary } from "../types";
 
-function ScoreLabel({ score }: { score: number | null }) {
-  if (score === null) return <span style={{ color: "var(--color-text-muted)" }}>—</span>;
-  const color = score >= 7 ? "var(--color-success)" : score >= 5 ? "var(--color-warning)" : "var(--color-danger)";
-  return <span style={{ color, fontWeight: 700 }}>{score}/10</span>;
+function scoreColor(score: number | null): string {
+  if (score === null) return "var(--text-muted)";
+  if (score >= 7) return "var(--success)";
+  if (score >= 5) return "var(--warning)";
+  return "var(--danger)";
+}
+
+function ScorePill({ score }: { score: number | null }) {
+  if (score === null) {
+    return (
+      <span style={{ color: "var(--text-muted)", fontWeight: 600, fontSize: "0.9rem" }}>—</span>
+    );
+  }
+  const color = scoreColor(score);
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: "0.2rem",
+        padding: "0.35rem 0.7rem",
+        borderRadius: 10,
+        background: `${color}1f`,
+        border: `1px solid ${color}40`,
+        color,
+        fontWeight: 700,
+        fontSize: "0.9rem",
+      }}
+    >
+      {score}
+      <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>/10</span>
+    </span>
+  );
 }
 
 function buildRadarData(summary: SessionSummary) {
@@ -43,86 +72,193 @@ export default function SummaryPage() {
       .catch(() => setError("Could not load summary."));
   }, [sessionId]);
 
-  if (error) return <div className="page"><div className="error-banner">{error}</div></div>;
+  if (error) {
+    return (
+      <div className="page">
+        <div className="error-banner">{error}</div>
+      </div>
+    );
+  }
 
   if (!summary) {
     return (
       <div className="page">
-        <div className="skeleton" style={{ height: 24, width: 200, marginBottom: "1rem" }} />
-        <div className="skeleton" style={{ height: 300 }} />
+        <div className="skeleton" style={{ height: 28, width: 220, marginBottom: "1.25rem" }} />
+        <div className="skeleton" style={{ height: 220, marginBottom: "1.25rem" }} />
+        <div className="skeleton" style={{ height: 320 }} />
       </div>
     );
   }
 
   const radarData = buildRadarData(summary);
+  const overall = summary.total_score;
+  const overallColor = scoreColor(overall);
+  const overallPct = overall != null ? (overall / 10) * 100 : 0;
 
   return (
-    <div className="page">
-      <Link to="/dashboard" style={{ color: "var(--color-text-muted)", fontSize: "0.85rem" }}>← Dashboard</Link>
+    <div style={{ position: "relative", minHeight: "100vh" }}>
+      <div className="hero-glow" style={{ top: -400, opacity: 0.6 }} />
 
-      <h1 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "1.25rem 0 0.25rem" }}>Session Complete</h1>
-      <p style={{ color: "var(--color-text-muted)", marginBottom: "2rem" }}>
-        {summary.role} · {summary.level} · {summary.interview_type}
-      </p>
+      <div className="page" style={{ position: "relative", zIndex: 1 }}>
+        <Link to="/dashboard" style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+          ← Dashboard
+        </Link>
 
-      {/* Overall score */}
-      <div className="card" style={{ textAlign: "center", marginBottom: "2rem" }}>
-        <div style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", marginBottom: "0.4rem" }}>Overall Score</div>
-        <div style={{ fontSize: "3rem", fontWeight: 900, color: "var(--color-accent)" }}>
-          {summary.total_score != null ? `${summary.total_score}/10` : "—"}
+        <div className="anim-slideUp" style={{ marginTop: "1.5rem", marginBottom: "2rem" }}>
+          <div
+            style={{
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              color: "var(--accent-light)",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              marginBottom: "0.5rem",
+            }}
+          >
+            Session Complete
+          </div>
+          <h1 style={{ fontSize: "2.2rem", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "0.5rem" }}>
+            Your <span className="gradient-text">results</span>
+          </h1>
+          <p style={{ color: "var(--text-dim)" }}>
+            {summary.role} · {summary.level} · {summary.interview_type}
+          </p>
         </div>
-      </div>
 
-      {/* Radar chart */}
-      {radarData.length > 2 && (
-        <div className="card" style={{ marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem" }}>Score by Topic</h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="var(--color-border)" />
-              <PolarAngleAxis dataKey="topic" tick={{ fill: "var(--color-text-muted)", fontSize: 12 }} />
-              <Radar
-                name="Score"
-                dataKey="score"
-                stroke="var(--color-accent)"
-                fill="var(--color-accent)"
-                fillOpacity={0.25}
-              />
-              <Tooltip
-                contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 6 }}
-                labelStyle={{ color: "var(--color-text)" }}
-              />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Question-by-question breakdown */}
-      <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "1rem" }}>Question Breakdown</h2>
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "2rem" }}>
-        {summary.questions.map((q) => (
-          <div key={q.id} className="card" style={{ padding: "1rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
-              <div>
-                <div style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", marginBottom: "0.3rem" }}>
-                  Q{q.position} · <span className={`chip chip-${q.difficulty}`}>{q.difficulty}</span>{" "}
-                  <span className="chip chip-topic">{q.topic}</span>
-                </div>
-                <p style={{ fontSize: "0.9rem" }}>{q.text}</p>
-              </div>
-              <ScoreLabel score={q.answer?.score ?? null} />
+        {/* Big score circle */}
+        <div
+          className="card anim-slideUp"
+          style={{ textAlign: "center", marginBottom: "2rem", padding: "2.5rem 1.5rem" }}
+        >
+          <div
+            style={{
+              fontSize: "0.72rem",
+              color: "var(--text-muted)",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              fontWeight: 700,
+              marginBottom: "1.5rem",
+            }}
+          >
+            Overall Score
+          </div>
+          <div
+            className="score-circle"
+            style={
+              {
+                "--score-color": overallColor,
+                "--score-pct": `${overallPct}%`,
+              } as React.CSSProperties
+            }
+          >
+            <div style={{ fontSize: "3.5rem", fontWeight: 900, color: overallColor, lineHeight: 1, letterSpacing: "-0.04em" }}>
+              {overall != null ? overall : "—"}
+            </div>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: 4, fontWeight: 600 }}>
+              out of 10
             </div>
           </div>
-        ))}
-      </div>
+          <div style={{ marginTop: "1.5rem", fontSize: "0.9rem", color: "var(--text-dim)" }}>
+            Across {summary.questions.length} questions
+          </div>
+        </div>
 
-      <div style={{ display: "flex", gap: "0.75rem" }}>
-        <button className="btn-primary" onClick={() => navigate("/setup")}>
-          New Interview →
-        </button>
-        <Link to="/dashboard">
-          <button className="btn-secondary">Dashboard</button>
-        </Link>
+        {/* Radar chart */}
+        {radarData.length > 2 && (
+          <div className="card anim-slideUp" style={{ marginBottom: "2rem", animationDelay: "0.05s" }}>
+            <h2 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "1.25rem" }}>
+              Score by topic
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                <PolarAngleAxis dataKey="topic" tick={{ fill: "var(--text-dim)", fontSize: 12 }} />
+                <Radar
+                  name="Score"
+                  dataKey="score"
+                  stroke="#818CF8"
+                  fill="#6366F1"
+                  fillOpacity={0.35}
+                  strokeWidth={2}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(17, 20, 31, 0.95)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 10,
+                    backdropFilter: "blur(8px)",
+                  }}
+                  labelStyle={{ color: "var(--text)" }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Question breakdown */}
+        <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "1rem" }}>
+          Question breakdown
+        </h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "2rem" }}>
+          {summary.questions.map((q, i) => (
+            <div
+              key={q.id}
+              className="card anim-slideUp"
+              style={{ padding: "1rem 1.25rem", animationDelay: `${i * 0.03}s` }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "1rem",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.4rem",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      marginBottom: "0.4rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.72rem",
+                        color: "var(--text-muted)",
+                        fontWeight: 700,
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      Q{q.position}
+                    </span>
+                    <span className={`chip chip-${q.difficulty}`}>{q.difficulty}</span>
+                    <span className="chip chip-topic">{q.topic}</span>
+                  </div>
+                  <p style={{ fontSize: "0.92rem", lineHeight: 1.55, color: "var(--text)" }}>{q.text}</p>
+                </div>
+                <ScorePill score={q.answer?.score ?? null} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button
+            className="btn-primary"
+            onClick={() => navigate("/setup")}
+            style={{ padding: "0.85rem 1.5rem", flex: 1, minWidth: 180 }}
+          >
+            New Interview <span style={{ marginLeft: 6 }}>→</span>
+          </button>
+          <Link to="/dashboard" style={{ flex: 1, minWidth: 180 }}>
+            <button className="btn-secondary" style={{ width: "100%", padding: "0.85rem 1.5rem" }}>
+              View Dashboard
+            </button>
+          </Link>
+        </div>
       </div>
     </div>
   );
