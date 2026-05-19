@@ -38,10 +38,32 @@ class Session(Base):
     interview_type: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, default="active")
     total_score: Mapped[float | None] = mapped_column(NUMERIC(4, 2), nullable=True)
+    # V2: structured multi-topic sessions store topic list
+    topics: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     user: Mapped["User | None"] = relationship(back_populates="sessions")
     questions: Mapped[list["Question"]] = relationship(back_populates="session", order_by="Question.position")
+    sections: Mapped[list["InterviewSection"]] = relationship(
+        back_populates="session", order_by="InterviewSection.position"
+    )
+
+
+class InterviewSection(Base):
+    """Groups questions by topic within a V2 session."""
+    __tablename__ = "interview_sections"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sessions.id", ondelete="CASCADE")
+    )
+    topic_category: Mapped[str] = mapped_column(Text, nullable=False)
+    topic_name: Mapped[str] = mapped_column(Text, nullable=False)
+    question_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    session: Mapped["Session"] = relationship(back_populates="sections")
+    questions: Mapped[list["Question"]] = relationship(back_populates="section", order_by="Question.position")
 
 
 class Question(Base):
@@ -49,6 +71,9 @@ class Question(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("sessions.id", ondelete="CASCADE"))
+    section_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("interview_sections.id", ondelete="SET NULL"), nullable=True
+    )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(Text, nullable=False)
     topic: Mapped[str] = mapped_column(Text, nullable=False)
@@ -57,6 +82,7 @@ class Question(Base):
     expected_topics: Mapped[list] = mapped_column(JSONB, nullable=True)
 
     session: Mapped["Session"] = relationship(back_populates="questions")
+    section: Mapped["InterviewSection | None"] = relationship(back_populates="questions")
     answer: Mapped["Answer | None"] = relationship(back_populates="question", uselist=False)
 
 
@@ -71,6 +97,8 @@ class Answer(Base):
     gaps: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     model_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     tips: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # V2: richer behavioural feedback
+    behavioral_feedback: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     submitted_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     question: Mapped["Question"] = relationship(back_populates="answer")

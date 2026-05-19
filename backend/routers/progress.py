@@ -52,8 +52,8 @@ async def get_progress(
     )
 
 
-@router.get("/topics", response_model=list[str])
-async def list_topics(
+@router.get("/topics/practiced", response_model=list[str])
+async def list_practiced_topics(
     db: AsyncSession = Depends(get_db),
     user_id: uuid.UUID = Depends(get_current_user),
 ):

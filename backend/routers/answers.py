@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from auth import get_optional_user
 from database import get_db
 from models import Answer, Question
-from schemas import AnswerSubmit, EvaluationOut
+from schemas import AnswerSubmit, BehavioralFeedbackOut, EvaluationOut
 from services.ai_service import AIServiceError, evaluate_answer
 from services.weakness_service import update_weakness_tracker
 
@@ -43,6 +43,13 @@ async def submit_answer(
     except AIServiceError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
+    # Build behavioral feedback dict for storage
+    bf_dict = None
+    bf_out = None
+    if evaluation.behavioral_feedback:
+        bf_dict = evaluation.behavioral_feedback.model_dump()
+        bf_out = BehavioralFeedbackOut(**bf_dict)
+
     answer = Answer(
         question_id=question.id,
         user_text=body.user_text,
@@ -51,6 +58,7 @@ async def submit_answer(
         gaps=evaluation.gaps,
         model_answer=evaluation.model_answer,
         tips=evaluation.tips,
+        behavioral_feedback=bf_dict,
     )
     db.add(answer)
     await db.commit()
@@ -64,4 +72,5 @@ async def submit_answer(
         gaps=evaluation.gaps,
         model_answer=evaluation.model_answer,
         tips=evaluation.tips,
+        behavioral_feedback=bf_out,
     )

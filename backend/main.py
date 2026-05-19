@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import answers, progress, sessions
+from routers import answers, interview, progress, sessions, topics
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,6 +21,8 @@ app.add_middleware(
 app.include_router(sessions.router)
 app.include_router(answers.router)
 app.include_router(progress.router)
+app.include_router(topics.router)
+app.include_router(interview.router)
 
 
 @app.get("/health")

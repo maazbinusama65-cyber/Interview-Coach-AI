@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from "recharts";
 import { getSessionSummary } from "../api/sessions";
-import type { SessionSummary } from "../types";
+import type { BehavioralFeedback, SessionSummary } from "../types";
 
 function scoreColor(score: number | null): string {
   if (score === null) return "var(--text-muted)";
@@ -194,6 +194,50 @@ export default function SummaryPage() {
             </ResponsiveContainer>
           </div>
         )}
+
+        {/* Behavioral profile aggregate */}
+        {(() => {
+          const feedbacks = summary.questions
+            .map(q => q.answer?.behavioral_feedback)
+            .filter((f): f is BehavioralFeedback => f != null);
+          if (feedbacks.length === 0) return null;
+          const avg = (key: keyof Omit<BehavioralFeedback, "overall_impression">) =>
+            Math.round((feedbacks.reduce((s, f) => s + f[key], 0) / feedbacks.length) * 10) / 10;
+          const dims = [
+            { key: "communication_clarity" as const, label: "Communication" },
+            { key: "structure_organization" as const, label: "Structure" },
+            { key: "technical_depth" as const, label: "Technical depth" },
+            { key: "use_of_examples" as const, label: "Use of examples" },
+            { key: "confidence" as const, label: "Confidence" },
+          ];
+          return (
+            <div className="card anim-slideUp" style={{ marginBottom: "2rem", animationDelay: "0.1s" }}>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "1.25rem" }}>
+                Behavioural profile
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {dims.map(({ key, label }) => {
+                  const val = avg(key);
+                  const color = val >= 7 ? "var(--success)" : val >= 5 ? "var(--warning)" : "var(--danger)";
+                  return (
+                    <div key={key}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>{label}</span>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color }}>{val}/10</span>
+                      </div>
+                      <div className="score-bar-track" style={{ height: 6 }}>
+                        <div
+                          className="score-bar-fill"
+                          style={{ width: `${(val / 10) * 100}%`, background: color, boxShadow: `0 0 8px ${color}` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Question breakdown */}
         <h2 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "1rem" }}>
