@@ -390,13 +390,12 @@ export default function LiveInterviewPage() {
     setLoading(true);
     setPhase("processing");
     try {
+      const res: ConverseResponse = await converse(topics, level, interviewType, history, userTranscript);
+
       const newHistory = [...history];
       if (userTranscript) {
         newHistory.push({ role: "user", content: userTranscript });
       }
-
-      const res: ConverseResponse = await converse(topics, level, interviewType, newHistory, userTranscript);
-
       newHistory.push({ role: "assistant", content: res.turn.ai_message });
       setHistory(newHistory);
       setTurns((prev) => [...prev, { turn: res.turn, speech: res.speech_analysis }]);
