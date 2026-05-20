@@ -30,17 +30,7 @@ class SpeechAnalysis(BaseModel):
 class ConversationTurn(BaseModel):
     """What the AI says/does next."""
     ai_message: str
-    action: str = Field(description="question | follow_up | transition | feedback | wrap_up")
-    # If the AI just evaluated a user answer:
-    score: int | None = None
-    strengths: list[str] = Field(default_factory=list)
-    gaps: list[str] = Field(default_factory=list)
-    # Behavioral dimensions for the answer just given:
-    communication_clarity: int | None = None
-    structure_organization: int | None = None
-    technical_depth: int | None = None
-    use_of_examples: int | None = None
-    confidence: int | None = None
+    action: str = Field(description="question | follow_up | transition | wrap_up")
 
 
 # ── Speech analysis (called client-side but also verifiable server-side) ──
@@ -104,32 +94,26 @@ Interview type: {interview_type}.
 Behave like a real interviewer:
 - Be professional, warm, and encouraging
 - Ask one question at a time
-- Listen to the answer, then decide: ask a follow-up, probe deeper, give brief feedback, or move to the next topic
-- If the candidate gives a weak answer, probe gently rather than moving on
-- If the candidate gives a strong answer, acknowledge it briefly and move on
+- Listen to the answer, then decide: ask a follow-up, probe deeper, or move to the next topic
+- If the candidate gives a weak or incomplete answer, probe gently — ask them to elaborate or clarify
+- If the candidate gives a strong answer, acknowledge it briefly ("Good", "That makes sense") and move on
 - Keep questions specific to the topics — never ask generic filler
 - Transition smoothly between topics
 - After covering all topics, wrap up the interview
+- NEVER give scores, evaluations, or detailed feedback during the interview — just keep the conversation flowing naturally like a real interviewer would
+- If the candidate repeats themselves or seems stuck, gently redirect with a new angle on the question or move to the next topic
+- Treat each user message as a fresh answer — do NOT tell the candidate they are repeating themselves unless they truly are saying the exact same thing again
 
-IMPORTANT: Keep your responses concise (2-4 sentences max). This is a spoken conversation, not a written essay.
+IMPORTANT: Keep your responses concise (1-3 sentences max). This is a spoken conversation, not a written essay. Sound natural, not robotic.
 
 Respond with valid JSON only, in this exact shape:
 {{
   "ai_message": "<what you say to the candidate>",
-  "action": "question | follow_up | transition | feedback | wrap_up",
-  "score": <integer 1-10 or null if not evaluating>,
-  "strengths": ["..."] or [],
-  "gaps": ["..."] or [],
-  "communication_clarity": <integer 1-10 or null>,
-  "structure_organization": <integer 1-10 or null>,
-  "technical_depth": <integer 1-10 or null>,
-  "use_of_examples": <integer 1-10 or null>,
-  "confidence": <integer 1-10 or null>
+  "action": "question | follow_up | transition | wrap_up"
 }}
 
-When action is "question" or "follow_up" or "transition": score and behavioral fields should be null.
-When action is "feedback": include score and behavioral scores for the answer just given.
-When action is "wrap_up": thank the candidate and summarize briefly."""
+action must be one of: "question", "follow_up", "transition", "wrap_up".
+When action is "wrap_up": thank the candidate and end the interview naturally."""
 
 
 def _build_conversation_messages(
@@ -188,6 +172,88 @@ def converse(
             if attempt == _RETRY:
                 raise AIServiceError(
                     f"Failed to get interviewer response after {_RETRY} attempts"
+                ) from exc
+
+    raise AIServiceError("Unreachable")
+
+
+# ── Post-interview evaluation ────────────────────────────────────────────
+
+class TopicEvaluation(BaseModel):
+    topic: str
+    score: int = Field(ge=1, le=10)
+    strengths: list[str] = Field(default_factory=list)
+    gaps: list[str] = Field(default_factory=list)
+
+class InterviewEvaluation(BaseModel):
+    overall_score: int = Field(ge=1, le=10)
+    communication_clarity: int = Field(ge=1, le=10)
+    structure_organization: int = Field(ge=1, le=10)
+    technical_depth: int = Field(ge=1, le=10)
+    use_of_examples: int = Field(ge=1, le=10)
+    confidence: int = Field(ge=1, le=10)
+    topic_scores: list[TopicEvaluation] = Field(default_factory=list)
+    top_strengths: list[str] = Field(default_factory=list)
+    areas_to_improve: list[str] = Field(default_factory=list)
+    summary: str = ""
+
+
+def evaluate_interview(
+    topics: list[str],
+    level: str,
+    interview_type: str,
+    history: list[dict],
+) -> InterviewEvaluation:
+    topics_str = ", ".join(topics)
+    prompt = f"""You are a senior interview evaluator. Review this complete {interview_type} interview transcript for a {level}-level candidate on: {topics_str}.
+
+Evaluate the FULL interview and respond with valid JSON only:
+{{
+  "overall_score": <1-10>,
+  "communication_clarity": <1-10>,
+  "structure_organization": <1-10>,
+  "technical_depth": <1-10>,
+  "use_of_examples": <1-10>,
+  "confidence": <1-10>,
+  "topic_scores": [
+    {{"topic": "<topic name>", "score": <1-10>, "strengths": ["..."], "gaps": ["..."]}}
+  ],
+  "top_strengths": ["<3-5 key strengths across the whole interview>"],
+  "areas_to_improve": ["<3-5 actionable improvements>"],
+  "summary": "<2-3 sentence overall assessment>"
+}}
+
+Be fair but honest. Base scores only on what the candidate actually said."""
+
+    from groq import Groq
+    from config import settings
+    from functools import lru_cache
+
+    @lru_cache(maxsize=1)
+    def _client() -> Groq:
+        return Groq(api_key=settings.groq_api_key)
+
+    messages: list[dict] = [{"role": "system", "content": prompt}]
+    for turn in history:
+        messages.append({"role": turn["role"], "content": turn["content"]})
+    messages.append({"role": "user", "content": "The interview is now complete. Please evaluate the entire interview."})
+
+    for attempt in range(1, _RETRY + 1):
+        try:
+            response = _client().chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.3,
+            )
+            raw = response.choices[0].message.content
+            data = json.loads(raw)
+            return InterviewEvaluation.model_validate(data)
+        except Exception as exc:
+            logger.warning("Evaluation attempt %d failed: %s", attempt, exc)
+            if attempt == _RETRY:
+                raise AIServiceError(
+                    f"Failed to evaluate interview after {_RETRY} attempts"
                 ) from exc
 
     raise AIServiceError("Unreachable")

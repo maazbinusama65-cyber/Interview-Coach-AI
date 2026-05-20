@@ -18,10 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(topics.router)
 app.include_router(sessions.router)
 app.include_router(answers.router)
 app.include_router(progress.router)
-app.include_router(topics.router)
 app.include_router(interview.router)
 
 

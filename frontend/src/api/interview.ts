@@ -2,15 +2,7 @@ import { apiFetch } from "./client";
 
 export interface ConversationTurn {
   ai_message: string;
-  action: "question" | "follow_up" | "transition" | "feedback" | "wrap_up";
-  score: number | null;
-  strengths: string[];
-  gaps: string[];
-  communication_clarity: number | null;
-  structure_organization: number | null;
-  technical_depth: number | null;
-  use_of_examples: number | null;
-  confidence: number | null;
+  action: "question" | "follow_up" | "transition" | "wrap_up";
 }
 
 export interface SpeechAnalysis {
@@ -32,6 +24,26 @@ export interface HistoryEntry {
   content: string;
 }
 
+export interface TopicEvaluation {
+  topic: string;
+  score: number;
+  strengths: string[];
+  gaps: string[];
+}
+
+export interface InterviewEvaluation {
+  overall_score: number;
+  communication_clarity: number;
+  structure_organization: number;
+  technical_depth: number;
+  use_of_examples: number;
+  confidence: number;
+  topic_scores: TopicEvaluation[];
+  top_strengths: string[];
+  areas_to_improve: string[];
+  summary: string;
+}
+
 export function converse(
   topics: string[],
   level: string,
@@ -48,5 +60,22 @@ export function converse(
       history,
       user_transcript: user_transcript ?? null,
     }),
+  });
+}
+
+export interface EvaluateResponse {
+  evaluation: InterviewEvaluation;
+  session_id: string | null;
+}
+
+export function evaluateInterview(
+  topics: string[],
+  level: string,
+  interview_type: string,
+  history: HistoryEntry[],
+): Promise<EvaluateResponse> {
+  return apiFetch("/api/interview/evaluate", {
+    method: "POST",
+    body: JSON.stringify({ topics, level, interview_type, history }),
   });
 }
