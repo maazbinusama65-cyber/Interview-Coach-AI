@@ -78,40 +78,6 @@ pytest tests/ -v --cov=. --cov-report=term-missing
 cd frontend
 npm test
 ```
-
-## Deployment
-
-### Backend → Render
-
-1. Create a new **Web Service** in Render, connect your repo
-2. Set root directory to `backend/`
-3. Build command: `pip install -r requirements.txt && alembic upgrade head`
-4. Start command: `gunicorn -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT`
-5. Add environment variables from `.env.example`
-
-### Frontend → Vercel
-
-1. Import the repo in Vercel
-2. Set root directory to `frontend/`
-3. Add `VITE_API_BASE_URL` pointing to your Render service URL
-4. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-
-## API Reference
-
-```
-POST  /api/sessions                  Create session + generate questions
-GET   /api/sessions                  List user's past sessions
-GET   /api/sessions/{id}             Get session + questions
-POST  /api/sessions/{id}/complete    Mark complete, compute total_score
-POST  /api/answers                   Submit answer → AI evaluation
-GET   /api/sessions/{id}/summary     Full session with answers + scores
-GET   /api/progress                  Weakness tracker for current user
-GET   /api/topics                    Topics seen by current user
-GET   /health                        Health check
-```
-
-Interactive docs: `http://localhost:8000/docs`
-
 ## Project Structure
 
 ```
@@ -134,9 +100,3 @@ interview-coach/
         ├── pages/           Landing, Login, Setup, Interview, Summary, Dashboard, Topic
         └── types/           TypeScript interfaces
 ```
-
-## Resume Bullets
-
-- Built AI Interview Coach, a full-stack mock interview platform using Groq LLaMA 3.1 to generate role-specific question sets and evaluate answers with structured scoring, strengths/gaps analysis, and model answers — deployed on Render + Vercel
-- Designed a running-average weakness tracker across sessions that surfaces low-scoring topics, enabling users to identify and drill specific knowledge gaps over time
-- Implemented Pydantic-validated LLM output pipelines for both question generation and answer evaluation, ensuring consistent structured JSON output from LLaMA 3.1
