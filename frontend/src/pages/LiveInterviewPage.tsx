@@ -168,6 +168,32 @@ function speak(text: string): Promise<void> {
   });
 }
 
+/* ─── SVG Icons ──────────────────────────────────────────────────────── */
+
+function IconMic(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  );
+}
+
+function IconSquare(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+    </svg>
+  );
+}
+
+function IconVolume(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    </svg>
+  );
+}
+
 /* ─── Score bar helper ────────────────────────────────────────────────── */
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
@@ -564,8 +590,8 @@ export default function LiveInterviewPage() {
           }}>
             {!started && (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1.5rem", textAlign: "center" }}>
-                <div style={{ fontSize: "3rem" }}>🎤</div>
-                <h1 style={{ fontSize: "2rem", fontWeight: 900, letterSpacing: "-0.03em" }}>
+                <div style={{ color: "var(--indigo-light)" }}><IconMic style={{ width: 48, height: 48 }} /></div>
+                <h1 style={{ fontSize: "2rem", fontWeight: 900, letterSpacing: "-0.03em", fontFamily: "var(--font-display)" }}>
                   Ready for your <span className="gradient-text">live interview</span>?
                 </h1>
                 <p style={{ color: "var(--text-dim)", maxWidth: 500, lineHeight: 1.65 }}>
@@ -733,7 +759,7 @@ export default function LiveInterviewPage() {
                     disabled={loading}
                     style={{ minWidth: 200 }}
                   >
-                    🎤 Speak answer
+                    <IconMic style={{ width: 16, height: 16 }} /> Speak answer
                   </button>
                 )}
                 {phase === "user_speaking" && (
@@ -747,12 +773,12 @@ export default function LiveInterviewPage() {
                       animation: "glow-pulse 1.5s ease-in-out infinite",
                     }}
                   >
-                    ⏹ Done speaking
+                    <IconSquare style={{ width: 14, height: 14 }} /> Done speaking
                   </button>
                 )}
                 {phase === "ai_speaking" && (
                   <span style={{ fontSize: "0.88rem", color: "var(--indigo-light)", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ animation: "glow-pulse 1.5s ease-in-out infinite", display: "inline-block" }}>🔊</span>
+                    <span style={{ animation: "glow-pulse 1.5s ease-in-out infinite", display: "inline-flex" }}><IconVolume /></span>
                     AI is speaking…
                   </span>
                 )}
@@ -844,7 +870,7 @@ export default function LiveInterviewPage() {
                     borderRadius: 6, color: "#fff",
                     animation: "glow-pulse 1.5s ease-in-out infinite",
                   }}>
-                    🎤 Listening
+                    Listening
                   </span>
                 )}
               </div>

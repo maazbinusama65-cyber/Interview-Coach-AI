@@ -123,8 +123,32 @@ function SessionCard({ s }: { s: SessionListItem }) {
   );
 }
 
+function IconTrendingUp() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+    </svg>
+  );
+}
+
+function IconStar() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function IconClipboard() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+    </svg>
+  );
+}
+
 interface StatCardProps {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   value: string;
   accent?: boolean;
@@ -134,7 +158,7 @@ function StatCard({ icon, label, value, accent }: StatCardProps) {
   return (
     <div className="card" style={{ padding: "1.25rem" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
-        <div className="stat-icon" aria-hidden>{icon}</div>
+        <div className="stat-icon" aria-hidden="true" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
         <div>
           <div
             style={{
@@ -188,7 +212,7 @@ export default function DashboardPage() {
       <div style={{ position: "relative", minHeight: "100vh" }}>
         <div className="hero-glow" />
         <div className="page" style={{ textAlign: "center", paddingTop: "5rem", position: "relative", zIndex: 1 }}>
-          <h2 style={{ fontWeight: 800, marginBottom: "0.75rem", fontSize: "1.6rem" }}>
+          <h2 style={{ fontWeight: 800, marginBottom: "0.75rem", fontSize: "1.6rem", fontFamily: "var(--font-display)" }}>
             Sign in to access your <span className="gradient-text">dashboard</span>
           </h2>
           <p style={{ color: "var(--text-dim)", marginBottom: "1.75rem" }}>
@@ -226,7 +250,7 @@ export default function DashboardPage() {
 
       <div className="page-wide" style={{ position: "relative", zIndex: 1 }}>
         <div className="anim-slideUp" style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "0.35rem" }}>
+          <h1 style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "0.35rem", fontFamily: "var(--font-display)" }}>
             Welcome back
           </h1>
           <p style={{ color: "var(--text-dim)" }}>Your performance, sessions, and growth at a glance.</p>
@@ -261,12 +285,12 @@ export default function DashboardPage() {
                     className="anim-slideUp"
                   >
                     <StatCard
-                      icon="📈"
+                      icon={<IconTrendingUp />}
                       label="Sessions"
                       value={String(progress.total_sessions)}
                     />
                     <StatCard
-                      icon="⭐"
+                      icon={<IconStar />}
                       label="Overall Avg"
                       value={progress.overall_avg_score.toFixed(1)}
                       accent
@@ -356,7 +380,7 @@ export default function DashboardPage() {
                     padding: "2.5rem 1.5rem",
                   }}
                 >
-                  <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📝</div>
+                  <div style={{ marginBottom: "0.5rem", color: "var(--text-dim)" }}><IconClipboard /></div>
                   <div style={{ marginBottom: "0.5rem", fontWeight: 600, color: "var(--text)" }}>
                     No sessions yet
                   </div>

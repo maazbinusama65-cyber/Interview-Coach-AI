@@ -117,7 +117,7 @@ export default function SummaryPage() {
           >
             Session Complete
           </div>
-          <h1 style={{ fontSize: "2.2rem", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "0.5rem" }}>
+          <h1 style={{ fontSize: "2.2rem", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "0.5rem", fontFamily: "var(--font-display)" }}>
             Your <span className="gradient-text">results</span>
           </h1>
           <p style={{ color: "var(--text-dim)" }}>

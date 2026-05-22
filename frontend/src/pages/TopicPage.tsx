@@ -3,6 +3,14 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { createSession } from "../api/sessions";
 import { useAuth } from "../hooks/useAuth";
 
+function IconLock() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
 export default function TopicPage() {
   const { topic } = useParams<{ topic: string }>();
   const { session: authSession } = useAuth();
@@ -58,6 +66,7 @@ export default function TopicPage() {
               fontWeight: 800,
               letterSpacing: "-0.03em",
               marginBottom: "0.6rem",
+              fontFamily: "var(--font-display)",
             }}
           >
             <span className="gradient-text">{decodedTopic}</span>
@@ -84,7 +93,7 @@ export default function TopicPage() {
               gap: "0.75rem",
             }}
           >
-            <span style={{ fontSize: "1.1rem" }}>🔐</span>
+            <span style={{ color: "var(--text-dim)" }}><IconLock /></span>
             <span>
               <Link to="/login" style={{ color: "var(--accent-light)", fontWeight: 600 }}>
                 Sign in

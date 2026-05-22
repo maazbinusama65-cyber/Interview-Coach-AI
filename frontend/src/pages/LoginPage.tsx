@@ -73,7 +73,7 @@ export default function LoginPage() {
             <span style={{ fontWeight: 800, fontSize: "1rem", letterSpacing: "-0.025em" }}>Interview Coach</span>
           </div>
 
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 900, letterSpacing: "-0.03em", marginBottom: "0.4rem" }}>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: 900, letterSpacing: "-0.03em", marginBottom: "0.4rem", fontFamily: "var(--font-display)" }}>
             {mode === "signin" ? "Welcome back" : "Create account"}
           </h1>
           <p style={{ color: "var(--text-dim)", fontSize: "0.92rem", marginBottom: "2rem" }}>

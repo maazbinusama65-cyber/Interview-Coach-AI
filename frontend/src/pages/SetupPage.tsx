@@ -16,10 +16,52 @@ const LEVELS: { value: Level; label: string; sub: string }[] = [
   { value: "senior", label: "Senior", sub: "5+ years" },
 ];
 
-const TYPES: { value: InterviewType; label: string; desc: string; icon: string }[] = [
-  { value: "technical",  label: "Technical only",      icon: "💻", desc: "Algorithms, system design, coding" },
-  { value: "behavioral", label: "Behavioural only",    icon: "🤝", desc: "Leadership, teamwork, situational" },
-  { value: "mixed",      label: "Mixed (recommended)", icon: "⚡", desc: "60 % technical — 40 % behavioural" },
+/* ─── SVG Icons ──────────────────────────────────────────────────────── */
+
+function IconCode(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
+    </svg>
+  );
+}
+
+function IconUsers(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function IconZap(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+function IconVideo(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+  );
+}
+
+function IconFileText(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
+const TYPES: { value: InterviewType; label: string; desc: string; icon: React.ReactNode }[] = [
+  { value: "technical",  label: "Technical only",      icon: <IconCode />, desc: "Algorithms, system design, coding" },
+  { value: "behavioral", label: "Behavioural only",    icon: <IconUsers />, desc: "Leadership, teamwork, situational" },
+  { value: "mixed",      label: "Mixed (recommended)", icon: <IconZap />, desc: "60 % technical — 40 % behavioural" },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -148,7 +190,7 @@ export default function SetupPage() {
 
         {/* Header */}
         <div className="anim-slideUp" style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "2.2rem", fontWeight: 900, letterSpacing: "-0.04em", marginBottom: "0.35rem" }}>
+          <h1 style={{ fontSize: "2.2rem", fontWeight: 900, letterSpacing: "-0.04em", marginBottom: "0.35rem", fontFamily: "var(--font-display)" }}>
             Build your <span className="gradient-text">interview</span>
           </h1>
           <p style={{ color: "var(--text-dim)", fontSize: "0.95rem" }}>
@@ -278,9 +320,9 @@ export default function SetupPage() {
                   <StepLabel step={2} title="Interview mode" />
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
                     {([
-                      { value: "live" as const, label: "🎥 Live Video", sub: "AI conversation with webcam & voice" },
-                      { value: "text" as const, label: "📝 Text-Based", sub: "Type answers at your own pace" },
-                    ]).map(({ value, label, sub }) => {
+                      { value: "live" as const, label: "Live Video", sub: "AI conversation with webcam & voice", icon: <IconVideo /> },
+                      { value: "text" as const, label: "Text-Based", sub: "Type answers at your own pace", icon: <IconFileText /> },
+                    ]).map(({ value, label, sub, icon }) => {
                       const active = mode === value;
                       return (
                         <button
@@ -299,7 +341,10 @@ export default function SetupPage() {
                             transition: "all 0.2s",
                           }}
                         >
-                          <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{label}</div>
+                          <div style={{ fontWeight: 700, fontSize: "0.95rem", display: "flex", alignItems: "center", gap: "0.4rem", justifyContent: "center" }}>
+                            <span style={{ color: active ? (value === "live" ? "#6EE7B7" : "var(--indigo-light)") : "var(--text-dim)" }}>{icon}</span>
+                            {label}
+                          </div>
                           <div style={{ fontSize: "0.75rem", color: active ? (value === "live" ? "#6EE7B7" : "var(--indigo-light)") : "var(--text-muted)", marginTop: 3 }}>{sub}</div>
                         </button>
                       );
@@ -394,7 +439,7 @@ export default function SetupPage() {
                 border: "1px solid var(--border)",
               }}>
                 {[
-                  { label: "Mode", value: mode === "live" ? "🎥 Live Video" : "📝 Text" },
+                  { label: "Mode", value: mode === "live" ? "Live Video" : "Text" },
                   { label: "Level", value: LEVELS.find(l => l.value === level)?.label ?? level },
                   { label: "Format", value: TYPES.find(t => t.value === interviewType)?.label.replace(" (recommended)", "") ?? interviewType },
                   { label: "Topics", value: `${selected.size}` },
@@ -442,7 +487,7 @@ export default function SetupPage() {
                   background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)",
                   fontSize: "0.82rem", color: "#6EE7B7",
                 }}>
-                  🎥 Live mode: The AI interviewer will ask questions conversationally, follow up on your answers, and adapt in real time. Your webcam and microphone will be used.
+                  Live mode: The AI interviewer will ask questions conversationally, follow up on your answers, and adapt in real time. Your webcam and microphone will be used.
                 </div>
               )}
             </div>
@@ -467,7 +512,8 @@ export default function SetupPage() {
                     {mode === "live" ? "Preparing…" : `Generating ${totalQuestions} questions…`}
                   </>
                 ) : (
-                  <>{mode === "live" ? "Start Live Interview 🎥" : "Start Interview →"}</>
+                  <>{mode === "live" ? "Start Live Interview →" : "Start Interview →"}</>
+
                 )}
               </button>
             </div>
